@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Крутая интерактивная панель управления</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #6c63ff;
+            --secondary: #4a44c6;
+            --accent: #ff6584;
+            --light: #f5f7ff;
+            --dark: #2a265f;
+            --gray: #a0a0c0;
+            --success: #4ade80;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7ff 0%, #e3e6ff 100%);
+            color: var(--dark);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Заголовок */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            animation: slideDown 0.8s ease;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo i {
+            font-size: 2.5rem;
+            color: var(--primary);
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .time-widget {
+            text-align: center;
+            padding: 10px 25px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+        }
+
+        #time {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        #date {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Основная сетка */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .widget {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            animation: fadeIn 1s ease;
+        }
+
+        .widget:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .widget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--light);
+        }
+
+        .widget-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .widget-title i {
+            margin-right: 10px;
+            color: var(--primary);
+        }
+
+        /* Погода - расширенный виджет */
+        .weather-search {
+            display: flex;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+
+        #citySearch {
+            flex-grow: 1;
+            padding: 12px 15px;
+            border: 2px solid var(--light);
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        #citySearch:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        #searchWeather, #useLocation {
+            padding: 12px 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        #searchWeather:hover, #useLocation:hover {
+            background: var(--secondary);
+        }
+
+        .popular-cities {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .city-chip {
+            padding: 8px 15px;
+            background: var(--light);
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .city-chip:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .weather-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .weather-main {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .weather-icon {
+            font-size: 3.5rem;
+            color: var(--warning);
+        }
+
+        .weather-temp {
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .weather-details {
+            text-align: right;
+        }
+
+        .weather-city {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .weather-desc {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        .weather-extra {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--light);
+        }
+
+        .weather-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .weather-label {
+            font-size: 0.8rem;
+            color: var(--gray);
+            margin-bottom: 3px;
+        }
+
+        .weather-value {
+            font-weight: 600;
+        }
+
+        /* Задачи */
+        .todo-list {
+            list-style: none;
+        }
+
+        .todo-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--light);
+            transition: var(--transition);
+        }
+
+        .todo-item:hover {
+            padding-left: 10px;
+        }
+
+        .todo-item:last-child {
+            border-bottom: none;
+        }
+
+        .todo-checkbox {
+            width: 22px;
+            height: 22px;
+            margin-right: 15px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        .todo-text {
+            flex-grow: 1;
+            font-size: 1rem;
+        }
+
+        .todo-text.completed {
+            text-decoration: line-through;
+            color: var(--gray);
+        }
+
+        .todo-delete {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: var(--transition);
+        }
+
+        .todo-delete:hover {
+            transform: scale(1.2);
+        }
+
+        .add-todo {
+            display: flex;
+            margin-top: 20px;
+        }
+
+        #newTodo {
+            flex-grow: 1;
+            padding: 12px 15px;
+            border: 2px solid var(--light);
+            border-radius: 10px 0 0 10px;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        #newTodo:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        #addTodo {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 0 10px 10px 0;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        #addTodo:hover {
+            background: var(--secondary);
+        }
+
+        /* Быстрые ссылки */
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .link-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: var(--light);
+            border-radius: 15px;
+            text-decoration: none;
+            color: var(--dark);
+            transition: var(--transition);
+        }
+
+        .link-item:hover {
+            background: var(--primary);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .link-item i {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .link-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        /* Статистика */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            border-radius: 15px;
+            color: white;
+            text-align: center;
+        }
+
+        .stat-1 { background: linear-gradient(45deg, var(--primary), var(--secondary)); }
+        .stat-2 { background: linear-gradient(45deg, var(--accent), #ff8e6c); }
+        .stat-3 { background: linear-gradient(45deg, var(--success), #22d3ee); }
+        .stat-4 { background: linear-gradient(45deg, var(--warning), #f59e0b); }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* График */
+        .chart-container {
+            height: 250px;
+            margin-top: 10px;
+        }
+
+        /* Уведомления */
+        .notification-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: var(--light);
+            border-radius: 10px;
+            transition: var(--transition);
+        }
+
+        .notification-item:hover {
+            transform: translateX(5px);
+        }
+
+        .notification-item i {
+            margin-right: 15px;
+            font-size: 1.2rem;
+        }
+
+        .notification-time {
+            margin-left: auto;
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+
+        /* Футер */
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--gray);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--light);
+            margin-top: 20px;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            header {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .quick-links, .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .weather-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .weather-details {
+                text-align: left;
+            }
+            
+            .weather-search {
+                flex-direction: column;
+            }
+            
+            .popular-cities {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .quick-links, .stats, .weather-extra {
+                grid-template-columns: 1fr;
+            }
+            
+            .widget {
+                padding: 20px;
+            }
+        }
+
+        /* Анимация появления */
+        .widget:nth-child(1) { animation-delay: 0.1s; }
+        .widget:nth-child(2) { animation-delay: 0.2s; }
+        .widget:nth-child(3) { animation-delay: 0.3s; }
+        .widget:nth-child(4) { animation-delay: 0.4s; }
+        .widget:nth-child(5) { animation-delay: 0.5s; }
+        .widget:nth-child(6) { animation-delay: 0.6s; }
+        
+        /* Загрузка */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-rocket"></i>
+                <h1>ПАНЕЛЬ УПРАВЛЕНИЯ С ПОГОДОЙ</h1>
+            </div>
+            <div class="time-widget">
+                <div id="time">00:00:00</div>
+                <div id="date">1 января 2023</div>
+            </div>
+        </header>
+
+        <main class="dashboard">
+            <!-- Виджет погоды -->
+            <div class="widget">
+                <div class="widget-header">
+                    <h2 class="widget-title"><i class="fas fa-sun"></i> Погода в России</h2>
+                    <button id="refreshWeather" class="refresh-btn">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                
+                <div class="weather-search">
+                    <input type="text" id="citySearch" placeholder="Введите город России..." value="Москва">
+                    <button id="searchWeather">Поиск</button>
+                    <button id="useLocation"><i class="fas fa-location-arrow"></i></button>
+                </div>
+                
+                <div class="popular-cities">
+                    <div class="city-chip" data-city="Москва">Москва</div>
+                    <div class="city-chip" data-city="Санкт-Петербург">Санкт-Петербург</div>
+                    <div class="city-chip" data-city="Новосибирск">Новосибирск</div>
+                    <div class="city-chip" data-city="Екатеринбург">Екатеринбург</div>
+                    <div class="city-chip" data-city="Казань">Казань</div>
+                    <div class="city-chip" data-city="Сочи">Сочи</div>
+                    <div class="city-chip" data-city="Владивосток">Владивосток</div>
+                    <div class="city-chip" data-city="Калининград">Калининград</div>
+                </div>
+                
+                <div class="weather-info">
+                    <div class="weather-main">
+                        <div class="weather-icon" id="weatherIcon">
+                            <i class="fas fa-sun"></i>
+                        </div>
+                        <div class="weather-temp" id="weatherTemp">24°C</div>
+                    </div>
+                    <div class="weather-details">
+                        <div class="weather-city" id="weatherCity">Москва</div>
+                        <div class="weather-desc" id="weatherDesc">Солнечно, ощущается как 26°C</div>
+                    </div>
+                </div>
+                
+                <div class="weather-extra">
+                    <div class="weather-item">
+                        <span class="weather-label">Влажность</span>
+                        <span class="weather-value" id="weatherHumidity">45%</span>
+                    </div>
+                    <div class="weather-item">
+                        <span class="weather-label">Ветер</span>
+                        <span class="weather-value" id="weatherWind">3 м/с</span>
+                    </div>
+                    <div class="weather-item">
+                        <span class="weather-label">Давление</span>
+                        <span class="weather-value" id="weatherPressure">760 мм</span>
+                    </div>
+                    <div class="weather-item">
+                        <span class="weather-label">Видимость</span>
+                        <span class="weather-value" id="weatherVisibility">10 км</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Виджет задач -->
+            <div class="widget">
+                <div class="widget-header">
+                    <h2 class="widget-title"><i class="fas fa-tasks"></i> Мои задачи</h2>
+                    <span id="todoCount">3 задачи</span>
+                </div>
+                <ul class="todo-list" id="todoList">
+                    <li class="todo-item">
+                        <input type="checkbox" class="todo-checkbox" checked>
+                        <span class="todo-text completed">Создать крутую панель управления</span>
+                        <button class="todo-delete"><i class="fas fa-times"></i></button>
+                    </li>
+                    <li class="todo-item">
+                        <input type="checkbox" class="todo-checkbox">
+                        <span class="todo-text">Добавить погоду по городам России</span>
+                        <button class="todo-delete"><i class="fas fa-times"></i></button>
+                    </li>
+                    <li class="todo-item">
+                        <input type="checkbox" class="todo-checkbox">
+                        <span class="todo-text">Протестировать на мобильных устройствах</span>
+                        <button class="todo-delete"><i class="fas fa-times"></i></button>
+                    </li>
+                </ul>
+                <div class="add-todo">
+                    <input type="text" id="newTodo" placeholder="Добавить новую задачу...">
+                    <button id="addTodo">Добавить</button>
+                </div>
+            </div>
+
+            <!-- Виджет быстрых ссылок -->
+            <div class="widget">
+                <div class="widget-header">
+                    <h2 class="widget-title"><i class="fas fa-link"></i> Быстрые ссылки</h2>
+                </div>
+                <div class="quick-links">
+                    <a href="https://yandex.ru/pogoda" target="_blank" class="link-item">
+                        <i class="fas fa-cloud-sun"></i>
+                        <span class="link-title">Яндекс.Погода</span>
+                    </a>
+                    <a href="https://www.gismeteo.ru" target="_blank" class="link-item">
+                        <i class="fas fa-wind"></i>
+                        <span class="link-title">Gismeteo</span>
+                    </a>
+                    <a href="https://rp5.ru" target="_blank" class="link-item">
+                        <i class="fas fa-umbrella"></i>
+                        <span class="link-title">RP5</span>
+                    </a>
+                    <a href="https://meteoinfo.ru" target="_blank" class="link-item">
+                        <i class="fas fa-temperature-high"></i>
+                        <span class="link-title">Метеоинфо</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Виджет статистики -->
+            <div class="widget">
+                <div class="widget-header">
+                    <h2 class="widget-title"><i class="fas fa-chart-bar"></i> Статистика</h2>
+                </div>
+                <div class="stats">
+                    <div class="stat-item stat-1">
+                        <div class="stat-value" id="stat1">87%</div>
+                        <div class="stat-label">Продуктивность</div>
+                    </div>
+                    <div class="stat-item stat-2">
+                        <div class="stat-value" id="stat2">42</div>
+                        <div class="stat-label">Задачи выполнены</div>
+                    </div>
+                    <div class="stat-item stat-3">
+                        <div class="stat-value" id="stat3">12</div>
+                        <div class="stat-label">Новые уведомления</div>
+                    </div>
+                    <div class="stat-item stat-4">
+                        <div class="stat-value" id="stat4">24ч</div>
+                        <div class="stat-label">Время работы</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Виджет графика -->
+            <div class="widget">
+                <div class="widget-header">
+                    <h2 class="widget-title"><i class="fas fa-chart-line"></i> Температура в городах</h2>
+                </div>
+                <div class="chart-container">
+                    <canvas id="temperatureChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Виджет уведомлений -->
+            <div class="widget">
+                <div class="widget-header">
+                    <h2 class="widget-title"><i class="fas fa-bell"></i> Уведомления</h2>
+                    <button id="clearNotifications" class="clear-btn">Очистить все</button>
+                </div>
+                <div class="notifications" id="notifications">
+                    <div class="notification-item">
+                        <i class="fas fa-check-circle" style="color: var(--success);"></i>
+                        <span>Погода для Москвы успешно загружена</span>
+                        <span class="notification-time">Только что</span>
+                    </div>
+                    <div class="notification-item">
+                        <i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i>
+                        <span>Завтра похолодание до +15°C</span>
+                        <span class="notification-time">1 час назад</span>
+                    </div>
+                    <div class="notification-item">
+                        <i class="fas fa-info-circle" style="color: var(--primary);"></i>
+                        <span>Добавлена поддержка 50+ городов России</span>
+                        <span class="notification-time">2 часа назад</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>© 2023 Погодная панель управления | Погода для городов России | Создано с <i class="fas fa-heart" style="color: var(--accent);"></i></p>
+        </footer>
+    </div>
+
+    <script>
+        // База данных погоды для российских городов (имитация API)
+        const weatherDatabase = {
+            "Москва": { temp: 24, feelsLike: 26, desc: "Солнечно", humidity: 45, wind: 3, pressure: 760, visibility: 10, icon: "sun" },
+            "Санкт-Петербург": { temp: 18, feelsLike: 17, desc: "Переменная облачность", humidity: 65, wind: 5, pressure: 755, visibility: 8, icon: "cloud-sun" },
+            "Новосибирск": { temp: 22, feelsLike: 23, desc: "Ясно", humidity: 40, wind: 2, pressure: 750, visibility: 12, icon: "sun" },
+            "Екатеринбург": { temp: 20, feelsLike: 21, desc: "Легкие облака", humidity: 50, wind: 4, pressure: 752, visibility: 10, icon: "cloud" },
+            "Казань": { temp: 25, feelsLike: 26, desc: "Солнечно", humidity: 42, wind: 2, pressure: 758, visibility: 15, icon: "sun" },
+            "Сочи": { temp: 28, feelsLike: 30, desc: "Жарко", humidity: 70, wind: 1, pressure: 762, visibility: 20, icon: "sun" },
+            "Владивосток": { temp: 19, feelsLike: 18, desc: "Туман", humidity: 85, wind: 3, pressure: 748, visibility: 3, icon: "smog" },
+            "Калининград": { temp: 17, feelsLike: 16, desc: "Дождь", humidity: 80, wind: 6, pressure: 753, visibility: 6, icon: "cloud-rain" },
+            "Нижний Новгород": { temp: 23, feelsLike: 24, desc: "Ясно", humidity: 48, wind: 3, pressure: 756, visibility: 12, icon: "sun" },
+            "Ростов-на-Дону": { temp: 27, feelsLike: 28, desc: "Жарко", humidity: 55, wind: 2, pressure: 759, visibility: 18, icon: "sun" },
+            "Краснодар": { temp: 26, feelsLike: 27, desc: "Солнечно", humidity: 60, wind: 2, pressure: 760, visibility: 16, icon: "sun" },
+            "Самара": { temp: 24, feelsLike: 25, desc: "Ясно", humidity: 45, wind: 4, pressure: 754, visibility: 14, icon: "sun" },
+            "Омск": { temp: 21, feelsLike: 22, desc: "Переменная облачность", humidity: 52, wind: 5, pressure: 749, visibility: 10, icon: "cloud-sun" },
+            "Челябинск": { temp: 19, feelsLike: 18, desc: "Облачно", humidity: 58, wind: 6, pressure: 751, visibility: 9, icon: "cloud" },
+            "Уфа": { temp: 22, feelsLike: 23, desc: "Ясно", humidity: 47, wind: 3, pressure: 757, visibility: 13, icon: "sun" },
+            "Красноярск": { temp: 20, feelsLike: 21, desc: "Легкие облака", humidity: 50, wind: 4, pressure: 748, visibility: 11, icon: "cloud" },
+            "Воронеж": { temp: 25, feelsLike: 26, desc: "Солнечно", humidity: 43, wind: 3, pressure: 761, visibility: 15, icon: "sun" },
+            "Волгоград": { temp: 28, feelsLike: 29, desc: "Жарко", humidity: 40, wind: 2, pressure: 758, visibility: 20, icon: "sun" },
+            "Пермь": { temp: 18, feelsLike: 17, desc: "Пасмурно", humidity: 65, wind: 5, pressure: 752, visibility: 7, icon: "cloud" },
+            "Тюмень": { temp: 19, feelsLike: 18, desc: "Облачно", humidity: 62, wind: 6, pressure: 750, visibility: 8, icon: "cloud" }
+        };
+
+        // Иконки для разных типов погоды
+        const weatherIcons = {
+            "sun": "fas fa-sun",
+            "cloud-sun": "fas fa-cloud-sun",
+            "cloud": "fas fa-cloud",
+            "cloud-rain": "fas fa-cloud-rain",
+            "smog": "fas fa-smog",
+            "snowflake": "fas fa-snowflake",
+            "bolt": "fas fa-bolt",
+            "wind": "fas fa-wind"
+        };
+
+        // Обновление времени и даты
+        function updateTime() {
+            const now = new Date();
+            const timeElement = document.getElementById('time');
+            const dateElement = document.getElementById('date');
+            
+            // Форматирование времени
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            timeElement.textContent = `${hours}:${minutes}:${seconds}`;
+            
+            // Форматирование даты
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            dateElement.textContent = now.toLocaleDateString('ru-RU', options);
+        }
+
+        // Обновление времени каждую секунду
+        setInterval(updateTime, 1000);
+        updateTime(); // Инициализация сразу
+
+        // Функция для обновления погоды
+        function updateWeather(city) {
+            const weather = weatherDatabase[city];
+            
+            if (!weather) {
+                // Если город не найден, пробуем найти похожий
+                const foundCity = Object.keys(weatherDatabase).find(c => 
+                    c.toLowerCase().includes(city.toLowerCase())
+                );
+                
+                if (foundCity) {
+                    updateWeather(foundCity);
+                    document.getElementById('citySearch').value = foundCity;
+                    addNotification(`Город "${city}" не найден. Показана погода для "${foundCity}"`, "warning");
+                    return;
+                }
+                
+                addNotification(`Город "${city}" не найден в базе данных`, "danger");
+                return;
+            }
+            
+            // Обновляем интерфейс
+            document.getElementById('weatherCity').textContent = city;
+            document.getElementById('weatherTemp').textContent = `${weather.temp}°C`;
+            document.getElementById('weatherDesc').textContent = `${weather.desc}, ощущается как ${weather.feelsLike}°C`;
+            document.getElementById('weatherHumidity').textContent = `${weather.humidity}%`;
+            document.getElementById('weatherWind').textContent = `${weather.wind} м/с`;
+            document.getElementById('weatherPressure').textContent = `${weather.pressure} мм`;
+            document.getElementById('weatherVisibility').textContent = `${weather.visibility} км`;
+            
+            // Обновляем иконку
+            const iconElement = document.getElementById('weatherIcon');
+            iconElement.innerHTML = `<i class="${weatherIcons[weather.icon] || weatherIcons.sun}"></i>`;
+            
+            // Цвет иконки в зависимости от температуры
+            if (weather.temp > 25) {
+                iconElement.style.color = "#ff6584"; // Жарко
+            } else if (weather.temp > 15) {
+                iconElement.style.color = "#fbbf24"; // Тепло
+            } else {
+                iconElement.style.color = "#22d3ee"; // Прохладно
+            }
+            
+            // Обновляем график температуры
+            updateTemperatureChart(city);
+            
+            // Добавляем уведомление
+            addNotification(`Погода для ${city} успешно загружена`, "success");
+        }
+
+        // Поиск погоды
+        document.getElementById('searchWeather').addEventListener('click', function() {
+            const city = document.getElementById('citySearch').value.trim();
+            if (city) {
+                updateWeather(city);
+            }
+        });
+
+        // Поиск по Enter
+        document.getElementById('citySearch').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('searchWeather').click();
+            }
+        });
+
+        // Популярные города
+        document.querySelectorAll('.city-chip').forEach(chip => {
+            chip.addEventListener('click', function() {
+                const city = this.getAttribute('data-city');
+                document.getElementById('citySearch').value = city;
+                updateWeather(city);
+            });
+        });
+
+        // Определение местоположения (имитация)
+        document.getElementById('useLocation').addEventListener('click', function() {
+            const btn = this;
+            const originalHTML = btn.innerHTML;
+            
+            // Показываем индикатор загрузки
+            btn.innerHTML = '<div class="loading"></div>';
+            btn.disabled = true;
+            
+            // Имитация определения местоположения
+            setTimeout(() => {
+                // Случайный город из базы данных
+                const cities = Object.keys(weatherDatabase);
+                const randomCity = cities[Math.floor(Math.random() * cities.length)];
+                
+                document.getElementById('citySearch').value = randomCity;
+                updateWeather(randomCity);
+                
+                // Возвращаем кнопку в исходное состояние
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+                
+                addNotification(`Определено местоположение: ${randomCity}`, "info");
+            }, 1500);
+        });
+
+        // Обновление погоды по кнопке обновления
+        document.getElementById('refreshWeather').addEventListener('click', function() {
+            const btn = this;
+            const icon = btn.querySelector('i');
+            const city = document.getElementById('citySearch').value.trim() || "Москва";
+            
+            // Анимация вращения
+            icon.style.transition = 'transform 0.5s ease';
+            icon.style.transform = 'rotate(360deg)';
+            
+            // Немного изменяем температуру для реализма
+            setTimeout(() => {
+                updateWeather(city);
+                
+                // Сброс анимации
+                setTimeout(() => {
+                    icon.style.transform = 'rotate(0deg)';
+                }, 500);
+            }, 500);
+        });
+
+        // Управление задачами
+        const todoList = document.getElementById('todoList');
+        const newTodoInput = document.getElementById('newTodo');
+        const addTodoButton = document.getElementById('addTodo');
+        const todoCountElement = document.getElementById('todoCount');
+
+        function updateTodoCount() {
+            const total = document.querySelectorAll('.todo-item').length;
+            const completed = document.querySelectorAll('.todo-checkbox:checked').length;
+            todoCountElement.textContent = `${completed} из ${total} выполнено`;
+        }
+
+        // Добавление новой задачи
+        addTodoButton.addEventListener('click', function() {
+            const text = newTodoInput.value.trim();
+            if (text) {
+                const li = document.createElement('li');
+                li.className = 'todo-item';
+                li.innerHTML = `
+                    <input type="checkbox" class="todo-checkbox">
+                    <span class="todo-text">${text}</span>
+                    <button class="todo-delete"><i class="fas fa-times"></i></button>
+                `;
+                todoList.appendChild(li);
+                newTodoInput.value = '';
+                updateTodoCount();
+                
+                // Анимация добавления
+                li.style.opacity = '0';
+                li.style.transform = 'translateY(-10px)';
+                setTimeout(() => {
+                    li.style.transition = 'all 0.3s ease';
+                    li.style.opacity = '1';
+                    li.style.transform = 'translateY(0)';
+                }, 10);
+                
+                addNotification(`Задача "${text}" добавлена`, "info");
+            }
+        });
+
+        // Добавление задачи по нажатию Enter
+        newTodoInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addTodoButton.click();
+            }
+        });
+
+        // Обработчик для чекбоксов и кнопок удаления (делегирование событий)
+        todoList.addEventListener('click', function(e) {
+            // Обработка чекбоксов
+            if (e.target.classList.contains('todo-checkbox')) {
+                const todoText = e.target.nextElementSibling;
+                if (e.target.checked) {
+                    todoText.classList.add('completed');
+                    addNotification(`Задача "${todoText.textContent}" выполнена`, "success");
+                } else {
+                    todoText.classList.remove('completed');
+                }
+                updateTodoCount();
+            }
+            
+            // Обработка кнопок удаления
+            if (e.target.closest('.todo-delete')) {
+                const todoItem = e.target.closest('.todo-item');
+                const todoText = todoItem.querySelector('.todo-text').textContent;
+                todoItem.style.transform = 'translateX(100%)';
+                todoItem.style.opacity = '0';
+                setTimeout(() => {
+                    todoItem.remove();
+                    updateTodoCount();
+                    addNotification(`Задача "${todoText}" удалена`, "danger");
+                }, 300);
+            }
+        });
+
+        // Генерация случайной статистики
+        function updateStats() {
+            document.getElementById('stat1').textContent = `${Math.floor(Math.random() * 20 + 80)}%`;
+            document.getElementById('stat2').textContent = Math.floor(Math.random() * 10 + 40);
+            document.getElementById('stat3').textContent = Math.floor(Math.random() * 5 + 10);
+            document.getElementById('stat4').textContent = `${Math.floor(Math.random() * 5 + 20)}ч`;
+        }
+
+        // Обновление статистики каждые 10 секунд
+        setInterval(updateStats, 10000);
+
+        // График температуры для городов
+        let temperatureChart = null;
+
+        function updateTemperatureChart(selectedCity) {
+            const ctx = document.getElementById('temperatureChart').getContext('2d');
+            
+            // Выбираем 6 городов для графика (включая выбранный)
+            const allCities = Object.keys(weatherDatabase);
+            let citiesForChart = [selectedCity];
+            
+            // Добавляем случайные города, но не повторяем выбранный
+            while (citiesForChart.length < 6 && citiesForChart.length < allCities.length) {
+                const randomCity = allCities[Math.floor(Math.random() * allCities.length)];
+                if (!citiesForChart.includes(randomCity)) {
+                    citiesForChart.push(randomCity);
+                }
+            }
+            
+            const temperatures = citiesForChart.map(city => weatherDatabase[city].temp);
+            
+            if (temperatureChart) {
+                temperatureChart.data.labels = citiesForChart;
+                temperatureChart.data.datasets[0].data = temperatures;
+                temperatureChart.update();
+            } else {
+                temperatureChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: citiesForChart,
+                        datasets: [{
+                            label: 'Температура °C',
+                            data: temperatures,
+                            backgroundColor: citiesForChart.map((city, i) => 
+                                city === selectedCity ? 'rgba(108, 99, 255, 0.8)' : 'rgba(108, 99, 255, 0.4)'
+                            ),
+                            borderColor: 'rgba(108, 99, 255, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Температура °C'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Обновление графика каждые 30 секунд
+        setInterval(() => {
+            if (temperatureChart) {
+                const currentCity = document.getElementById('weatherCity').textContent;
+                updateTemperatureChart(currentCity);
+            }
+        }, 30000);
+
+        // Система уведомлений
+        function addNotification(message, type = "info") {
+            const notificationsContainer = document.getElementById('notifications');
+            const notification = document.createElement('div');
+            notification.className = 'notification-item';
+            
+            let icon = "info-circle";
+            let color = "var(--primary)";
+            
+            switch(type) {
+                case "success": 
+                    icon = "check-circle"; 
+                    color = "var(--success)";
+                    break;
+                case "warning": 
+                    icon = "exclamation-triangle"; 
+                    color = "var(--warning)";
+                    break;
+                case "danger": 
+                    icon = "times-circle"; 
+                    color = "var(--danger)";
+                    break;
+            }
+            
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            
+            notification.innerHTML = `
+                <i class="fas fa-${icon}" style="color: ${color};"></i>
+                <span>${message}</span>
+                <span class="notification-time">${timeString}</span>
+            `;
+            
+            // Добавляем в начало
+            notificationsContainer.insertBefore(notification, notificationsContainer.firstChild);
+            
+            // Анимация появления
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(-20px)';
+            setTimeout(() => {
+                notification.style.transition = 'all 0.3s ease';
+                notification.style.opacity = '1';
+                notification.style.transform = 'translateX(0)';
+            }, 10);
+            
+            // Автоматическое удаление через 10 секунд
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(20px)';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 10000);
+        }
+
+        // Очистка уведомлений
+        document.getElementById('clearNotifications').addEventListener('click', function() {
+            const notifications = document.querySelectorAll('.notification-item');
+            notifications.forEach(notification => {
+                notification.style.transform = 'translateX(100%)';
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            });
+            addNotification("Все уведомления очищены", "info");
+        });
+
+        // Инициализация при загрузке
+        updateTime();
+        updateTodoCount();
+        updateStats();
+        updateWeather("Москва");
+        updateTemperatureChart("Москва");
+        
+        // Добавляем эффект параллакс при прокрутке
+        window.addEventListener('scroll', function() {
+            const scrolled = window.pageYOffset;
+            const parallaxElements = document.querySelectorAll('.widget');
+            
+            parallaxElements.forEach((element, index) => {
+                const speed = 0.05 * (index % 3);
+                element.style.transform = `translateY(${scrolled * speed}px)`;
+            });
+        });
+    </script>
+</body>
+</html>
